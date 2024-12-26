@@ -1,0 +1,1 @@
+Give the option to have macros in the voice text, such as parsing "Tengo que XXXX" as a task in the Obsidian document

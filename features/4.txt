@@ -1,0 +1,1 @@
+This is more device specific, but update the txt with configuration and updated datetime, can we eject the device too to avoid data corruption?

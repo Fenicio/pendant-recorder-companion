@@ -1,0 +1,1 @@
+Copy the content to a temp folder, then process the audio, that way we can free the device as soon as possible.
