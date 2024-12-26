@@ -21,9 +21,9 @@ import wmi
 import json
 import time
 from watchdog.observers import Observer
-from audio_processor import AudioProcessor
-from obsidian_manager import ObsidianManager
-from record_folder_handler import RecordFolderHandler
+from .audio_processor import AudioProcessor
+from .obsidian_manager import ObsidianManager
+from .record_folder_handler import RecordFolderHandler
 
 class WindowsDriveMonitor:
     """
@@ -42,7 +42,7 @@ class WindowsDriveMonitor:
         monitored_drives (set): Currently monitored drive letters
     """
 
-    def __init__(self, config_path="config.json"):
+    def __init__(self, config_path="./config/config.json"):
         """Initialize Windows drive monitor with configuration."""
         self.load_config(config_path)
         self.wmi = wmi.WMI()

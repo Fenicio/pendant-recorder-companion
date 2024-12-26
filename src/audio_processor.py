@@ -11,6 +11,7 @@ to handle the conversion and transcription workflow.
 """
 
 import logging
+import os
 import whisper
 from pydub import AudioSegment
 
@@ -30,12 +31,24 @@ class AudioProcessor:
         """Initialize the audio processor with Whisper model."""
         self.model = whisper.load_model("base")
 
-    def convert_to_mp3(self, wav_path):
-        """Convert WAV file to MP3."""
+    def convert_to_mp3(self, wav_path, creation_time=None):
+        """
+        Convert WAV file to MP3 and set the correct creation time metadata.
+        
+        Args:
+            wav_path (str): Path to the WAV file
+            creation_time (datetime): The creation time to set for the MP3 file
+        """
         try:
             audio = AudioSegment.from_wav(wav_path)
             mp3_path = wav_path.rsplit('.', 1)[0] + '.mp3'
             audio.export(mp3_path, format='mp3')
+            
+            # Set the file creation and modification times if provided
+            if creation_time:
+                timestamp = creation_time.timestamp()
+                os.utime(mp3_path, (timestamp, timestamp))
+            
             logging.info(f"Converted {wav_path} to MP3")
             return mp3_path
         except Exception as e:

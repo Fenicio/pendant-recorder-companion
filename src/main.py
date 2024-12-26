@@ -16,8 +16,8 @@ import logging
 import threading
 import signal
 import sys
-from windows_drive_monitor import WindowsDriveMonitor
-from system_tray import SystemTrayIcon
+from .windows_drive_monitor import WindowsDriveMonitor
+from .system_tray import SystemTrayIcon
 
 # Configure logging
 logging.basicConfig(

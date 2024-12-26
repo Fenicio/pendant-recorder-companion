@@ -19,12 +19,12 @@ Setup
    pip install watchdog wmi pywin32 pydub
 
 3. Configure the application:
-   - Edit config.json to set your Obsidian vault path
+   - Edit config/config.json to set your Obsidian vault path
    - Default configuration will be created on first run if none exists
 
 Configuration Details
 -------------------
-1. Open config.json in a text editor. The file contains:
+1. Open config/config.json in a text editor. The file contains:
    {
      "obsidian_vault_path": "C:/Path/To/Your/Vault",
      "record_folder_name": "RECORD"
@@ -41,7 +41,7 @@ Setting Up as Startup Application
 To have the application start automatically when Windows boots:
 
 1. Create a shortcut:
-   - Right-click main.py and select "Create shortcut"
+   - Right-click run.py and select "Create shortcut"
    - Rename it to "Pendant Recorder Companion"
 
 2. Add to Windows Startup:
@@ -51,14 +51,14 @@ To have the application start automatically when Windows boots:
 
 3. Alternative Method (Run minimized):
    - Create a batch file (startup.bat) with these contents:
-     pythonw main.py
+     pythonw run.py
    - Create a shortcut to this batch file
    - Place the shortcut in the startup folder
 
 Usage
 -----
 1. Run the application:
-   python main.py
+   python run.py
 
 2. The application will:
    - Monitor for USB drives
@@ -74,17 +74,23 @@ Usage
      * Exit Application
 
 4. Logging:
-   - Application logs are written to usb_monitor.log
+   - Application logs are written to logs/usb_monitor.log
    - Check this file for debugging and monitoring processing status
 
-File Structure
+Project Structure
 -------------
-- main.py: Application entry point
-- windows_drive_monitor.py: Handles USB drive detection and monitoring
-- record_folder_handler.py: Processes WAV files when found
-- audio_processor.py: Handles audio conversion and transcription
-- obsidian_manager.py: Creates and manages Obsidian notes
-- config.json: Configuration settings
+src/
+  - main.py: Application entry point and core logic
+  - windows_drive_monitor.py: Handles USB drive detection and monitoring
+  - record_folder_handler.py: Processes WAV files when found
+  - audio_processor.py: Handles audio conversion and transcription
+  - obsidian_manager.py: Creates and manages Obsidian notes
+  - system_tray.py: System tray interface implementation
+config/
+  - config.json: Configuration settings
+logs/
+  - usb_monitor.log: Application logs
+run.py: Main entry point script
 
 Notes
 -----

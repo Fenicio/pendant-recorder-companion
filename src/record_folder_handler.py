@@ -55,6 +55,17 @@ class RecordFolderHandler(FileSystemEventHandler):
             else:
                 logging.debug(f"Skipping already processed file: {event.src_path}")
 
+    def parse_datetime_from_filename(self, filename):
+        """Parse datetime from filename format REC20241025043932."""
+        # Extract the datetime part from the filename (remove 'REC' prefix)
+        datetime_str = filename[3:].split('.')[0]
+        try:
+            # Parse using the format YYYYMMDDhhmmss
+            return datetime.strptime(datetime_str, '%Y%m%d%H%M%S')
+        except ValueError as e:
+            logging.error(f"Failed to parse datetime from filename {filename}: {e}")
+            return None
+
     def process_wav_file(self, wav_path):
         """Process a WAV file: convert to MP3, transcribe, and create note."""
         success = False
@@ -63,9 +74,16 @@ class RecordFolderHandler(FileSystemEventHandler):
             self.processed_files.add(wav_path)
             logging.info(f"Added {wav_path} to processed files set")
 
+            # Get datetime from filename
+            filename = os.path.basename(wav_path)
+            file_datetime = self.parse_datetime_from_filename(filename)
+            if not file_datetime:
+                logging.error(f"Could not parse datetime from filename {filename}")
+                return
+
             # Convert to MP3
             logging.info(f"Converting {wav_path} to MP3")
-            mp3_path = self.audio_processor.convert_to_mp3(wav_path)
+            mp3_path = self.audio_processor.convert_to_mp3(wav_path, file_datetime)
             if not mp3_path:
                 logging.error(f"Failed to convert {wav_path} to MP3")
                 return
@@ -77,8 +95,8 @@ class RecordFolderHandler(FileSystemEventHandler):
                 logging.error(f"Failed to transcribe {mp3_path}")
                 return
 
-            # Create Obsidian note
-            title = f"Recording_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            # Create Obsidian note using the datetime from filename
+            title = f"Recording_{file_datetime.strftime('%Y%m%d_%H%M%S')}"
             logging.info(f"Creating Obsidian note with title: {title}")
             self.obsidian_manager.create_note(title, transcription, mp3_path)
             logging.info(f"Successfully completed processing of {wav_path}")
@@ -93,10 +111,12 @@ class RecordFolderHandler(FileSystemEventHandler):
             self.processed_files.remove(wav_path)
             logging.info(f"Removed {wav_path} from processed files set")
             
-            # Delete the original WAV file if processing was successful
+            # Delete the original WAV file and MP3 file if processing was successful
             if success:
                 try:
                     os.remove(wav_path)
                     logging.info(f"Deleted original WAV file: {wav_path}")
+                    os.remove(mp3_path)
+                    logging.info(f"Deleted converted MP3 file: {mp3_path}")
                 except Exception as e:
-                    logging.error(f"Failed to delete WAV file {wav_path}: {str(e)}")
+                    logging.error(f"Failed to delete files: {str(e)}")
