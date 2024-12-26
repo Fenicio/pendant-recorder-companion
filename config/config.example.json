@@ -1,0 +1,9 @@
+{
+    "obsidian_vault_path": "C:\\Users\\myUser\\Documents\\Obsidian Vault",
+    "record_folder_name": "RECORD",
+    "media_folder_name": "media",
+    "whisper": {
+        "model": "base",
+        "language": "en"
+    }
+}

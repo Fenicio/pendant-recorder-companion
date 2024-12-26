@@ -105,7 +105,7 @@ class AudioProcessor:
                                      If not provided, uses default from config.
         
         Returns:
-            str: Transcribed text
+            list: List of tuples with (timestamp, text) for each segment
         """
         try:
             # Use provided language or default from config
@@ -113,10 +113,20 @@ class AudioProcessor:
             
             result = self.model.transcribe(
                 audio_path, 
-                language=transcribe_language
+                language=transcribe_language,
+                word_timestamps=True  # Enable word-level timestamps
             )
+            
+            # Process segments with timestamps
+            timestamped_segments = []
+            for segment in result.get('segments', []):
+                # Format timestamp as MM:SS
+                minutes, seconds = divmod(int(segment['start']), 60)
+                timestamp = f"{minutes:02d}:{seconds:02d}"
+                timestamped_segments.append((timestamp, segment['text'].strip()))
+            
             logging.info(f"Transcribed {audio_path} in {transcribe_language}")
-            return result["text"]
+            return timestamped_segments
         except Exception as e:
             logging.error(f"Error transcribing audio: {e}")
             return None

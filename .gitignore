@@ -23,3 +23,5 @@ pip-debug.log*
 # OS specific
 .DS_Store
 Thumbs.db
+
+config/config.json

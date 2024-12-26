@@ -3,7 +3,7 @@
     "record_folder_name": "RECORD",
     "media_folder_name": "media",
     "whisper": {
-        "model": "base",
-        "language": "en"
+        "model": "turbo",
+        "language": "es"
     }
 }

@@ -34,7 +34,13 @@ class ObsidianManager:
         os.makedirs(self.media_folder, exist_ok=True)
 
     def create_note(self, title, content, mp3_path):
-        """Create a new note in Obsidian with the transcribed text and MP3 link."""
+        """Create a new note in Obsidian with the transcribed text and MP3 link.
+        
+        Args:
+            title (str): Title of the note
+            content (list): List of (timestamp, text) tuples for transcription
+            mp3_path (str): Path to the MP3 file
+        """
         # Create a sanitized filename for the note
         note_filename = f"{title.replace(' ', '_')}.md"
         note_path = os.path.join(self.vault_path, note_filename)
@@ -61,11 +67,12 @@ Duration: {duration_minutes}m {duration_seconds}s
 ## Transcription
 """
 
-        # Append transcription lines
-        transcription_lines = []
-        for timestamp, text in content:
-            transcription_lines.append(f"- **{timestamp}**: {text}\\n")
-        note_content += ''.join(transcription_lines)
+        # Append timestamped transcription lines
+        if content:
+            for timestamp, text in content:
+                note_content += f"- **{timestamp}**: {text}\n"
+        else:
+            note_content += "No transcription available.\n"
 
         # Write the note
         with open(note_path, 'w', encoding='utf-8') as f:
