@@ -12,6 +12,7 @@ to handle the conversion and transcription workflow.
 
 import logging
 import os
+import json
 import whisper
 from pydub import AudioSegment
 
@@ -27,9 +28,48 @@ class AudioProcessor:
         convert_to_mp3: Converts WAV files to MP3 format
         transcribe_audio: Converts audio content to text
     """
-    def __init__(self):
-        """Initialize the audio processor with Whisper model."""
-        self.model = whisper.load_model("base")
+    def __init__(self, config_path='config/config.json'):
+        """
+        Initialize the audio processor with Whisper model from config.
+        
+        Args:
+            config_path (str): Path to the configuration file
+        """
+        # Default configuration
+        self.default_model = "base"
+        self.default_language = "en"
+
+        # Load additional Whisper configuration if available
+        try:
+            with open(config_path, 'r') as config_file:
+                config = json.load(config_file)
+                
+            # Check for Whisper-specific configuration
+            whisper_config = config.get('whisper', {})
+            model_name = whisper_config.get('model', self.default_model)
+            language = whisper_config.get('language', self.default_language)
+            
+            # Update class attributes
+            self.default_model = model_name
+            self.default_language = language
+        except FileNotFoundError:
+            logging.warning(f"Config file not found at {config_path}. Using default Whisper settings.")
+        except json.JSONDecodeError:
+            logging.error(f"Error decoding JSON from {config_path}. Using default Whisper settings.")
+        except Exception as e:
+            logging.error(f"Unexpected error loading config: {e}. Using default Whisper settings.")
+
+        # Load Whisper model
+        try:
+            logging.info(f"Loading Whisper model: {self.default_model}")
+            self.model = whisper.load_model(self.default_model)
+        except Exception as e:
+            logging.error(f"Error loading Whisper model: {e}")
+            # Fallback to absolute default
+            logging.warning("Falling back to absolute default Whisper model")
+            self.model = whisper.load_model("base")
+            self.default_model = "base"
+            self.default_language = "en"
 
     def convert_to_mp3(self, wav_path, creation_time=None):
         """
@@ -55,11 +95,27 @@ class AudioProcessor:
             logging.error(f"Error converting WAV to MP3: {e}")
             return None
 
-    def transcribe_audio(self, audio_path):
-        """Transcribe audio file using Whisper."""
+    def transcribe_audio(self, audio_path, language=None):
+        """
+        Transcribe audio file using Whisper.
+        
+        Args:
+            audio_path (str): Path to the audio file
+            language (str, optional): Language to use for transcription. 
+                                     If not provided, uses default from config.
+        
+        Returns:
+            str: Transcribed text
+        """
         try:
-            result = self.model.transcribe(audio_path)
-            logging.info(f"Transcribed {audio_path}")
+            # Use provided language or default from config
+            transcribe_language = language or self.default_language
+            
+            result = self.model.transcribe(
+                audio_path, 
+                language=transcribe_language
+            )
+            logging.info(f"Transcribed {audio_path} in {transcribe_language}")
             return result["text"]
         except Exception as e:
             logging.error(f"Error transcribing audio: {e}")

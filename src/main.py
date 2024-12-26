@@ -37,39 +37,61 @@ class Application:
         
     def start(self):
         """Start the application components."""
-        # Initialize the drive monitor
-        self.monitor = WindowsDriveMonitor()
-        
-        # Initialize system tray
-        self.system_tray = SystemTrayIcon(stop_callback=self.stop)
-        self.system_tray.run_detached()
-        
-        # Start monitoring
-        self.monitor.monitor_drives()
+        try:
+            # Initialize the drive monitor
+            self.monitor = WindowsDriveMonitor()
+            
+            # Initialize system tray
+            self.system_tray = SystemTrayIcon(stop_callback=self.stop)
+            self.system_tray.run_detached()
+            
+            # Start monitoring
+            self.monitor.monitor_drives()
+        except Exception as e:
+            logging.error(f"Failed to start application: {e}")
+            logging.exception("Detailed error traceback:")
+            self.stop()
         
     def stop(self):
         """Stop the application gracefully."""
-        logging.info("Shutting down application...")
-        if self.monitor:
-            # Add any cleanup needed for the monitor
-            pass
-        if self.system_tray:
-            self.system_tray.stop()
-        # Exit the application
-        sys.exit(0)
+        try:
+            logging.info("Shutting down application...")
+            if self.monitor:
+                # Add any cleanup needed for the monitor
+                self.monitor.stop()  # Assuming there's a stop method
+            if self.system_tray:
+                self.system_tray.stop()
+            # Exit the application
+            sys.exit(0)
+        except Exception as e:
+            logging.error(f"Error during application shutdown: {e}")
+            logging.exception("Detailed shutdown error traceback:")
+            sys.exit(1)
 
 def main():
     """Main entry point for the application."""
-    app = Application()
-    
-    # Set up signal handlers for graceful shutdown
-    def signal_handler(signum, frame):
-        app.stop()
-    
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    app.start()
+    try:
+        app = Application()
+        
+        # Set up signal handlers for graceful shutdown
+        def signal_handler(signum, frame):
+            try:
+                app.stop()
+            except Exception as e:
+                logging.error(f"Error in signal handler: {e}")
+                sys.exit(1)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        app.start()
+    except KeyboardInterrupt:
+        logging.info("Application interrupted by user.")
+        sys.exit(0)
+    except Exception as e:
+        logging.error(f"Unhandled exception in main application: {e}")
+        logging.exception("Detailed error traceback:")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

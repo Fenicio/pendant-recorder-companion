@@ -110,6 +110,12 @@ class WindowsDriveMonitor:
         except Exception as e:
             logging.error(f"Error starting folder monitoring: {e}")
 
+    def stop(self):
+        """Stop monitoring and close observers."""
+        for observer in self.observers:
+            observer.stop()
+            observer.join()
+
     def monitor_drives(self):
         """Monitor for new drives and check for RECORD folders."""
         while True:

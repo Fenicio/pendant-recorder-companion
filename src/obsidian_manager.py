@@ -13,6 +13,7 @@ import shutil
 import logging
 import json
 from datetime import datetime
+from mutagen.mp3 import MP3
 
 class ObsidianManager:
     """
@@ -43,17 +44,28 @@ class ObsidianManager:
         new_mp3_path = os.path.join(self.media_folder, mp3_filename)
         shutil.copy2(mp3_path, new_mp3_path)
 
-        # Create note content with markdown
-        note_content = f"""# {title}
+        # Calculate the duration of the MP3 file
+        audio = MP3(new_mp3_path)
+        duration = int(audio.info.length)
+        duration_minutes, duration_seconds = divmod(duration, 60)
+
+        # Create note content with markdown including duration
+        note_content = f"""---
+Created: [[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]]
+Duration: {duration_minutes}m {duration_seconds}s
+---
+# {title}
 
 ![[{mp3_filename}]]
 
 ## Transcription
-{content}
-
----
-Created: [[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]]
 """
+
+        # Append transcription lines
+        transcription_lines = []
+        for timestamp, text in content:
+            transcription_lines.append(f"- **{timestamp}**: {text}\\n")
+        note_content += ''.join(transcription_lines)
 
         # Write the note
         with open(note_path, 'w', encoding='utf-8') as f:
