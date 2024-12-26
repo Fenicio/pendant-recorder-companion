@@ -1,0 +1,4 @@
+watchdog
+wmi
+pywin32
+pydub
