@@ -100,3 +100,9 @@ Notes
 - Creates MP3 files for better compatibility and file size
 - When running as a startup application, the window will be hidden in the system tray
 - To stop the application, right-click the system tray icon and select "Exit"
+
+Generating the exe
+-----------------
+1. Install pyinstaller
+2. Run pyinstaller run.py
+3. The exe file will be created in the dist folder

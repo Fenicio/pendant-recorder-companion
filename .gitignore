@@ -13,6 +13,7 @@ env.bak/
 venv.bak/
 pip-debug.log*
 
+
 # Logs
 *.log
 
@@ -25,3 +26,8 @@ pip-debug.log*
 Thumbs.db
 
 config/config.json
+
+# PyInstaller
+build/
+dist/
+*.spec
