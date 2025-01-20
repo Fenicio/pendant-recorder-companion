@@ -106,3 +106,11 @@ Generating the exe
 1. Install pyinstaller
 2. Run pyinstaller run.py
 3. The exe file will be created in the dist folder
+
+
+Logging
+-------
+conda create --name pendant-recorder-companion python=3.10
+conda activate pendant-recorder-companion
+
+https://github.com/m-bain/whisperX
