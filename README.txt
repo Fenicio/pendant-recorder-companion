@@ -110,7 +110,10 @@ Generating the exe
 
 Logging
 -------
+Can't run conda from the terminal, there's a anaconda navigator app
+
 conda create --name pendant-recorder-companion python=3.10
 conda activate pendant-recorder-companion
+
 
 https://github.com/m-bain/whisperX

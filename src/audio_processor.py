@@ -13,8 +13,13 @@ to handle the conversion and transcription workflow.
 import logging
 import os
 import json
-import whisper
 from pydub import AudioSegment
+from typing import Optional
+
+from .transcription import TranscriptionProvider
+from .transcription.whisper_provider import WhisperProvider
+from .transcription.whisperx_provider import WhisperXProvider
+from .transcription.remote_provider import RemoteProvider
 
 class AudioProcessor:
     """
@@ -30,46 +35,48 @@ class AudioProcessor:
     """
     def __init__(self, config_path='config/config.json'):
         """
-        Initialize the audio processor with Whisper model from config.
+        Initialize the audio processor with configured transcription provider.
         
         Args:
             config_path (str): Path to the configuration file
         """
         # Default configuration
-        self.default_model = "base"
         self.default_language = "en"
+        self.provider = None
 
-        # Load additional Whisper configuration if available
+        # Load configuration if available
         try:
             with open(config_path, 'r') as config_file:
                 config = json.load(config_file)
-                
-            # Check for Whisper-specific configuration
-            whisper_config = config.get('whisper', {})
-            model_name = whisper_config.get('model', self.default_model)
-            language = whisper_config.get('language', self.default_language)
             
-            # Update class attributes
-            self.default_model = model_name
-            self.default_language = language
+            # Get transcription configuration
+            transcription_config = config.get('transcription', {})
+            provider_type = transcription_config.get('provider', 'whisper')
+            self.default_language = transcription_config.get('language', 'en')
+            
+            # Initialize provider based on configuration
+            if provider_type == 'whisperx':
+                model = transcription_config.get('model', 'base')
+                self.provider = WhisperXProvider(model_name=model)
+            elif provider_type == 'remote':
+                api_url = transcription_config.get('api_url')
+                api_key = transcription_config.get('api_key')
+                if not api_url:
+                    raise ValueError("Remote provider requires 'api_url' in config")
+                self.provider = RemoteProvider(api_url=api_url, api_key=api_key)
+            else:  # default to whisper
+                model = transcription_config.get('model', 'base')
+                self.provider = WhisperProvider(model_name=model)
+                
         except FileNotFoundError:
             logging.warning(f"Config file not found at {config_path}. Using default Whisper settings.")
+            self.provider = WhisperProvider()
         except json.JSONDecodeError:
             logging.error(f"Error decoding JSON from {config_path}. Using default Whisper settings.")
+            self.provider = WhisperProvider()
         except Exception as e:
             logging.error(f"Unexpected error loading config: {e}. Using default Whisper settings.")
-
-        # Load Whisper model
-        try:
-            logging.info(f"Loading Whisper model: {self.default_model}")
-            self.model = whisper.load_model(self.default_model)
-        except Exception as e:
-            logging.error(f"Error loading Whisper model: {e}")
-            # Fallback to absolute default
-            logging.warning("Falling back to absolute default Whisper model")
-            self.model = whisper.load_model("base")
-            self.default_model = "base"
-            self.default_language = "en"
+            self.provider = WhisperProvider()
 
     def convert_to_mp3(self, wav_path, creation_time=None):
         """
@@ -97,7 +104,7 @@ class AudioProcessor:
 
     def transcribe_audio(self, audio_path, language=None):
         """
-        Transcribe audio file using Whisper.
+        Transcribe audio file using configured provider.
         
         Args:
             audio_path (str): Path to the audio file
@@ -107,26 +114,6 @@ class AudioProcessor:
         Returns:
             list: List of tuples with (timestamp, text) for each segment
         """
-        try:
-            # Use provided language or default from config
-            transcribe_language = language or self.default_language
-            
-            result = self.model.transcribe(
-                audio_path, 
-                language=transcribe_language,
-                word_timestamps=True  # Enable word-level timestamps
-            )
-            
-            # Process segments with timestamps
-            timestamped_segments = []
-            for segment in result.get('segments', []):
-                # Format timestamp as MM:SS
-                minutes, seconds = divmod(int(segment['start']), 60)
-                timestamp = f"{minutes:02d}:{seconds:02d}"
-                timestamped_segments.append((timestamp, segment['text'].strip()))
-            
-            logging.info(f"Transcribed {audio_path} in {transcribe_language}")
-            return timestamped_segments
-        except Exception as e:
-            logging.error(f"Error transcribing audio: {e}")
-            return None
+        # Use provided language or default from config
+        transcribe_language = language or self.default_language
+        return self.provider.transcribe(audio_path, transcribe_language)

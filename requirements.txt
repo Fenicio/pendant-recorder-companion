@@ -2,3 +2,8 @@ watchdog
 wmi
 pywin32
 pydub
+whisperx
+opeanai-whisper
+ffmpeg
+mutagen
+pystray
