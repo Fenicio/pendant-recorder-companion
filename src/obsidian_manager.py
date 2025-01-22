@@ -14,6 +14,7 @@ import logging
 import json
 from datetime import datetime
 from mutagen.mp3 import MP3
+from .config_manager import ensure_config_exists
 
 class ObsidianManager:
     """
@@ -28,8 +29,7 @@ class ObsidianManager:
     def __init__(self, vault_path):
         """Initialize Obsidian manager with path to vault."""
         self.vault_path = vault_path
-        with open('./config/config.json', 'r') as f:
-            config = json.load(f)
+        config = ensure_config_exists()
         self.media_folder = os.path.join(vault_path, config['media_folder_name'])
         os.makedirs(self.media_folder, exist_ok=True)
 

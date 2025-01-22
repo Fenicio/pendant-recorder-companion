@@ -20,6 +20,7 @@ from .transcription import TranscriptionProvider
 from .transcription.whisper_provider import WhisperProvider
 from .transcription.whisperx_provider import WhisperXProvider
 from .transcription.remote_provider import RemoteProvider
+from .config_manager import ensure_config_exists
 
 class AudioProcessor:
     """
@@ -44,39 +45,27 @@ class AudioProcessor:
         self.default_language = "en"
         self.provider = None
 
-        # Load configuration if available
-        try:
-            with open(config_path, 'r') as config_file:
-                config = json.load(config_file)
-            
-            # Get transcription configuration
-            transcription_config = config.get('transcription', {})
-            provider_type = transcription_config.get('provider', 'whisper')
-            self.default_language = transcription_config.get('language', 'en')
-            
-            # Initialize provider based on configuration
-            if provider_type == 'whisperx':
-                model = transcription_config.get('model', 'base')
-                self.provider = WhisperXProvider(model_name=model)
-            elif provider_type == 'remote':
-                api_url = transcription_config.get('api_url')
-                api_key = transcription_config.get('api_key')
-                if not api_url:
-                    raise ValueError("Remote provider requires 'api_url' in config")
-                self.provider = RemoteProvider(api_url=api_url, api_key=api_key)
-            else:  # default to whisper
-                model = transcription_config.get('model', 'base')
-                self.provider = WhisperProvider(model_name=model)
-                
-        except FileNotFoundError:
-            logging.warning(f"Config file not found at {config_path}. Using default Whisper settings.")
-            self.provider = WhisperProvider()
-        except json.JSONDecodeError:
-            logging.error(f"Error decoding JSON from {config_path}. Using default Whisper settings.")
-            self.provider = WhisperProvider()
-        except Exception as e:
-            logging.error(f"Unexpected error loading config: {e}. Using default Whisper settings.")
-            self.provider = WhisperProvider()
+        # Load configuration using config manager
+        config = ensure_config_exists(config_path)
+        
+        # Get transcription configuration
+        transcription_config = config.get('transcription', {})
+        provider_type = transcription_config.get('provider', 'whisper')
+        self.default_language = transcription_config.get('language', 'en')
+        
+        # Initialize provider based on configuration
+        if provider_type == 'whisperx':
+            model = transcription_config.get('model', 'base')
+            self.provider = WhisperXProvider(model_name=model)
+        elif provider_type == 'remote':
+            api_url = transcription_config.get('api_url')
+            api_key = transcription_config.get('api_key')
+            if not api_url:
+                raise ValueError("Remote provider requires 'api_url' in config")
+            self.provider = RemoteProvider(api_url=api_url, api_key=api_key)
+        else:  # default to whisper
+            model = transcription_config.get('model', 'base')
+            self.provider = WhisperProvider(model_name=model)
 
     def convert_to_mp3(self, wav_path, creation_time=None):
         """
