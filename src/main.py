@@ -1,7 +1,7 @@
 """
 Main entry point for the Pendant Recorder Companion application.
 
-This script initializes and starts the Windows drive monitoring system that watches
+This script initializes and starts the platform-specific drive monitoring system that watches
 for USB drives containing voice recordings. It sets up logging and launches the
 main monitoring loop with a system tray icon.
 
@@ -16,16 +16,15 @@ import logging
 import threading
 import signal
 import sys
-from .windows_drive_monitor import WindowsDriveMonitor
-from .system_tray import SystemTrayIcon
+from .factories import DriveMonitorFactory, SystemTrayFactory
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('usb_monitor.log'),
-        logging.StreamHandler()
+        logging.StreamHandler(),
+        logging.FileHandler('pendant_recorder.log')
     ]
 )
 
@@ -38,11 +37,11 @@ class Application:
     def start(self):
         """Start the application components."""
         try:
-            # Initialize the drive monitor
-            self.monitor = WindowsDriveMonitor()
+            # Initialize the platform-specific drive monitor
+            self.monitor = DriveMonitorFactory.create_monitor()
             
-            # Initialize system tray
-            self.system_tray = SystemTrayIcon(stop_callback=self.stop)
+            # Initialize platform-specific system tray
+            self.system_tray = SystemTrayFactory.create_tray(stop_callback=self.stop)
             self.system_tray.run_detached()
             
             # Start monitoring
@@ -57,8 +56,7 @@ class Application:
         try:
             logging.info("Shutting down application...")
             if self.monitor:
-                # Add any cleanup needed for the monitor
-                self.monitor.stop()  # Assuming there's a stop method
+                self.monitor.stop()
             if self.system_tray:
                 self.system_tray.stop()
             # Exit the application
@@ -68,30 +66,15 @@ class Application:
             logging.exception("Detailed shutdown error traceback:")
             sys.exit(1)
 
-def main():
-    """Main entry point for the application."""
-    try:
-        app = Application()
-        
-        # Set up signal handlers for graceful shutdown
-        def signal_handler(signum, frame):
-            try:
-                app.stop()
-            except Exception as e:
-                logging.error(f"Error in signal handler: {e}")
-                sys.exit(1)
-        
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-        
-        app.start()
-    except KeyboardInterrupt:
-        logging.info("Application interrupted by user.")
-        sys.exit(0)
-    except Exception as e:
-        logging.error(f"Unhandled exception in main application: {e}")
-        logging.exception("Detailed error traceback:")
-        sys.exit(1)
+def signal_handler(signum, frame):
+    """Handle system signals for graceful shutdown."""
+    app.stop()
 
 if __name__ == "__main__":
-    main()
+    # Set up signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    # Create and start the application
+    app = Application()
+    app.start()
