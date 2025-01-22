@@ -5,5 +5,10 @@
     "whisper": {
         "model": "base",
         "language": "en"
+    },
+    "ollama": {
+        "enabled": false,
+        "url": "http://localhost:11434",
+        "model": "mistral"
     }
 }

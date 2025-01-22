@@ -101,6 +101,46 @@ Notes
 - When running as a startup application, the window will be hidden in the system tray
 - To stop the application, right-click the system tray icon and select "Exit"
 
+Error Handling
+-------------
+The application handles various error cases gracefully to ensure continuous operation:
+
+1. WAV to MP3 Conversion Errors:
+   - If a WAV file is corrupted or cannot be read:
+     * The error is logged
+     * The file is skipped
+     * Processing continues with the next file
+   - If there's insufficient disk space:
+     * The conversion is aborted
+     * An error message is logged
+     * The application continues monitoring for new files
+
+2. Audio Transcription Errors:
+   - If the audio file cannot be transcribed:
+     * The note is still created
+     * A "No transcription available" message is added to the note
+     * The audio file link is preserved
+   - If the transcription service (Whisper) fails:
+     * The error is logged
+     * The application retries up to 3 times
+     * If all retries fail, proceeds with note creation without transcription
+
+3. Ollama Integration Errors:
+   - If Ollama server is unreachable:
+     * The original prompt text is preserved in the note
+     * The error is logged
+     * Note creation continues without Ollama processing
+   - If Ollama returns an error:
+     * The original prompt text is kept
+     * The error response is logged
+     * The application continues processing other prompts
+   - If the model specified in config doesn't exist:
+     * A warning is logged
+     * The original prompt is preserved
+     * Future prompts will continue to be processed once correct model is available
+
+The application is designed to be resilient - no single error will crash the application or stop it from monitoring for new files. All errors are logged to help with troubleshooting.
+
 Generating the exe
 -----------------
 1. Install pyinstaller

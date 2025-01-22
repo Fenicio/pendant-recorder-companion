@@ -6,5 +6,10 @@
         "provider": "whisperx",
         "language": "es",
         "model": "turbo"
+    },
+    "ollama": {
+        "enabled": true,
+        "url": "http://localhost:11434",
+        "model": "llama3.2"
     }
 }
