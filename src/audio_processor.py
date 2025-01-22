@@ -1,108 +1,62 @@
 """
 Audio Processor Module
 
-This module handles all audio-related processing tasks, including:
-- Converting WAV files to MP3 format for better compatibility and file size
-- Transcribing audio content to text using speech recognition
-- Managing audio file operations and conversions
-
-The module uses external libraries for audio processing and speech recognition
-to handle the conversion and transcription workflow.
+This module coordinates audio processing operations by combining:
+- Audio format conversion (WAV to MP3)
+- Audio transcription
 """
 
 import logging
-import os
-import json
-from pydub import AudioSegment
-from typing import Optional
-
-from .transcription import TranscriptionProvider
-from .transcription.whisper_provider import WhisperProvider
-from .transcription.whisperx_provider import WhisperXProvider
-from .transcription.remote_provider import RemoteProvider
-from .config_manager import ensure_config_exists
+from typing import List, Optional
+from .audio import AudioConverter, AudioTranscriber
 
 class AudioProcessor:
     """
-    Handles audio file processing and transcription.
-
-    This class provides methods for converting audio files between formats
-    and transcribing audio content to text. It manages the complete audio
-    processing workflow from WAV input to MP3 conversion and text transcription.
-
-    Methods:
-        convert_to_mp3: Converts WAV files to MP3 format
-        transcribe_audio: Converts audio content to text
+    Coordinates audio processing operations.
+    
+    This class orchestrates the complete audio processing workflow by combining
+    audio conversion and transcription operations.
     """
-    def __init__(self, config_path='config/config.json'):
+    
+    def __init__(self, config_path: str = 'config/config.json'):
         """
-        Initialize the audio processor with configured transcription provider.
+        Initialize the audio processor with its components.
         
         Args:
-            config_path (str): Path to the configuration file
+            config_path: Path to the configuration file
         """
-        # Default configuration
-        self.default_language = "en"
-        self.provider = None
-
-        # Load configuration using config manager
-        config = ensure_config_exists(config_path)
+        self.converter = AudioConverter()
+        self.transcriber = AudioTranscriber(config_path)
         
-        # Get transcription configuration
-        transcription_config = config.get('transcription', {})
-        provider_type = transcription_config.get('provider', 'whisper')
-        self.default_language = transcription_config.get('language', 'en')
-        
-        # Initialize provider based on configuration
-        if provider_type == 'whisperx':
-            model = transcription_config.get('model', 'base')
-            self.provider = WhisperXProvider(model_name=model)
-        elif provider_type == 'remote':
-            api_url = transcription_config.get('api_url')
-            api_key = transcription_config.get('api_key')
-            if not api_url:
-                raise ValueError("Remote provider requires 'api_url' in config")
-            self.provider = RemoteProvider(api_url=api_url, api_key=api_key)
-        else:  # default to whisper
-            model = transcription_config.get('model', 'base')
-            self.provider = WhisperProvider(model_name=model)
-
-    def convert_to_mp3(self, wav_path, creation_time=None):
+    def process_wav_files(self, wav_directory: str, language: Optional[str] = None) -> List[dict]:
         """
-        Convert WAV file to MP3 and set the correct creation time metadata.
+        Process WAV files to transcribed text.
         
         Args:
-            wav_path (str): Path to the WAV file
-            creation_time (datetime): The creation time to set for the MP3 file
-        """
-        try:
-            audio = AudioSegment.from_wav(wav_path)
-            mp3_path = wav_path.rsplit('.', 1)[0] + '.mp3'
-            audio.export(mp3_path, format='mp3')
+            wav_directory: Directory containing WAV files
+            language: Optional language for transcription
             
-            # Set the file creation and modification times if provided
-            if creation_time:
-                timestamp = creation_time.timestamp()
-                os.utime(mp3_path, (timestamp, timestamp))
-            
-            logging.info(f"Converted {wav_path} to MP3")
-            return mp3_path
-        except Exception as e:
-            logging.error(f"Error converting WAV to MP3: {e}")
-            return None
-
-    def transcribe_audio(self, audio_path, language=None):
-        """
-        Transcribe audio file using configured provider.
-        
-        Args:
-            audio_path (str): Path to the audio file
-            language (str, optional): Language to use for transcription. 
-                                     If not provided, uses default from config.
-        
         Returns:
-            list: List of tuples with (timestamp, text) for each segment
+            List of dictionaries containing MP3 paths and their transcriptions
         """
-        # Use provided language or default from config
-        transcribe_language = language or self.default_language
-        return self.provider.transcribe(audio_path, transcribe_language)
+        results = []
+        
+        # First convert all WAV files to MP3
+        mp3_files = self.converter.batch_process_wav_files(wav_directory)
+        
+        # Then transcribe each MP3 file
+        for mp3_path in mp3_files:
+            try:
+                transcription = self.transcriber.transcribe(mp3_path, language)
+                results.append({
+                    'mp3_path': mp3_path,
+                    'transcription': transcription
+                })
+            except Exception as e:
+                logging.error(f"Error transcribing {mp3_path}: {e}")
+                results.append({
+                    'mp3_path': mp3_path,
+                    'error': str(e)
+                })
+        
+        return results
