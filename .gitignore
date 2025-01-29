@@ -13,7 +13,6 @@ env.bak/
 venv.bak/
 pip-debug.log*
 
-
 # Logs
 *.log
 
@@ -31,3 +30,10 @@ config/config.json
 build/
 dist/
 *.spec
+
+# FFmpeg binaries
+bin/*.exe
+bin/*.dll
+!bin/.gitkeep
+
+temp/

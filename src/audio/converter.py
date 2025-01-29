@@ -12,6 +12,7 @@ import os
 from pydub import AudioSegment
 from datetime import datetime
 from typing import List, Optional
+from .utils import get_ffmpeg_path
 
 class AudioConverter:
     """
@@ -29,6 +30,14 @@ class AudioConverter:
         if not os.path.exists(self.temp_dir):
             os.makedirs(self.temp_dir)
             
+        # Configure pydub to use bundled ffmpeg
+        ffmpeg_path = get_ffmpeg_path()
+        if ffmpeg_path:
+            AudioSegment.converter = ffmpeg_path
+            logging.info(f"Using bundled ffmpeg at: {ffmpeg_path}")
+        else:
+            logging.warning("Bundled ffmpeg not found, falling back to system ffmpeg")
+
     def convert_to_mp3(self, wav_path: str, creation_time: Optional[datetime] = None) -> Optional[str]:
         """
         Convert WAV file to MP3 and store in temp directory.

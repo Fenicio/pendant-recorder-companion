@@ -60,3 +60,33 @@ class AudioProcessor:
                 })
         
         return results
+
+    def convert_to_mp3(self, wav_path: str, file_datetime=None) -> Optional[str]:
+        """
+        Convert WAV file to MP3.
+        
+        Args:
+            wav_path: Path to the WAV file
+            file_datetime: Optional datetime to set for the MP3 file
+            
+        Returns:
+            Path to the created MP3 file, or None if conversion fails
+        """
+        return self.converter.convert_to_mp3(wav_path, file_datetime)
+
+    def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> Optional[str]:
+        """
+        Transcribe an audio file.
+        
+        Args:
+            audio_path: Path to the audio file
+            language: Optional language for transcription
+            
+        Returns:
+            Transcribed text, or None if transcription fails
+        """
+        try:
+            return self.transcriber.transcribe(audio_path, language)
+        except Exception as e:
+            logging.error(f"Error transcribing {audio_path}: {e}")
+            return None

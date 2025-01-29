@@ -70,11 +70,14 @@ def signal_handler(signum, frame):
     """Handle system signals for graceful shutdown."""
     app.stop()
 
-if __name__ == "__main__":
+def main():
+    """Initialize and run the Pendant Recorder Companion application."""
     # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    # Create and start the application
     app = Application()
     app.start()
+
+if __name__ == "__main__":
+    main()

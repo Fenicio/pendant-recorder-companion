@@ -19,16 +19,26 @@ class WhisperXProvider(TranscriptionProvider):
             model_name (str): Name of the WhisperX model to use
             device (str): Device to use for inference ("cuda" or "cpu")
         """
+        # Log CUDA information
+        logging.info(f"CUDA available: {torch.cuda.is_available()}")
+        if torch.cuda.is_available():
+            logging.info(f"CUDA device count: {torch.cuda.device_count()}")
+            logging.info(f"CUDA device name: {torch.cuda.get_device_name(0)}")
+            logging.info(f"CUDA version: {torch.version.cuda}")
+        
         self.model_name = model_name
         self.device = device
         try:
             logging.info(f"Loading WhisperX model: {model_name} on {device}")
-            self.model = whisperx.load_model(model_name, device)
+            compute_type = "float32" if device == "cpu" else "float16"
+            logging.info(f"Using compute type: {compute_type}")
+            self.model = whisperx.load_model(model_name, device, compute_type=compute_type)
         except Exception as e:
             logging.error(f"Error loading WhisperX model: {e}")
             logging.warning("Falling back to base model on CPU")
             self.device = "cpu"
-            self.model = whisperx.load_model("base", "cpu")
+            compute_type = "float32" if self.device == "cpu" else "float16"
+            self.model = whisperx.load_model("base", "cpu", compute_type=compute_type)
             self.model_name = "base"
 
     def transcribe(self, audio_path: str, language: Optional[str] = None) -> Optional[List[Tuple[str, str]]]:

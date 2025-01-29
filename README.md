@@ -92,6 +92,26 @@ logs/
   - usb_monitor.log: Application logs
 run.py: Main entry point script
 
+## FFmpeg Integration
+
+This project includes FFmpeg for audio conversion. The FFmpeg binaries should be placed in the `bin` directory:
+
+```
+bin/
+  ffmpeg.exe  (Windows)
+  ffmpeg      (Linux/Mac)
+```
+
+When distributing the application:
+1. Download the appropriate FFmpeg binaries for your platform
+2. Place them in the `bin` directory
+3. The application will automatically use the bundled FFmpeg
+
+For development:
+- Windows: Download FFmpeg from https://ffmpeg.org/download.html#build-windows
+- Linux: Use your package manager or download from https://ffmpeg.org/download.html
+- Mac: Use homebrew (`brew install ffmpeg`) or download from https://ffmpeg.org/download.html
+
 Notes
 -----
 - The application must be running to process new recordings
@@ -144,7 +164,8 @@ The application is designed to be resilient - no single error will crash the app
 Generating the exe
 -----------------
 1. Install pyinstaller
-2. Run pyinstaller run.py
+2. Run this command:
+pyinstaller --hidden-import=numba.core.types.old_scalars --hidden-import=numba.core.datamodel.old_models --hidden-import=numba.cpython.old_builtins --hidden-import=numba.core.typing.old_builtins --hidden-import=lightning_fabric --collect-data lightning_fabric --collect-data speechbrain --collect-all speechbrain --collect-data whisperx --collect-all whisperx --collect-all pyannote.audio --add-data "C:\Users\sirgu\miniconda3\Lib\site-packages\whisperx\assets;whisperx\assets" --onefile run.py
 3. The exe file will be created in the dist folder
 
 
