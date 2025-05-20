@@ -112,6 +112,50 @@ For development:
 - Linux: Use your package manager or download from https://ffmpeg.org/download.html
 - Mac: Use homebrew (`brew install ffmpeg`) or download from https://ffmpeg.org/download.html
 
+Voice Activity Detection (VAD)
+---------------------------
+The application includes an optional Voice Activity Detection (VAD) feature that can automatically record speech:
+
+1. Features:
+   - Continuously monitors microphone input for speech
+   - Automatically starts/stops recording based on voice detection
+   - Saves recordings as MP3 files in your Obsidian vault
+   - Transcribes recordings using WhisperX
+   - Organizes transcriptions in daily notes (tts_YYYY-MM-DD.md)
+
+2. Configuration:
+   Edit config/config.json to enable and configure VAD:
+   ```json
+   {
+     "vad": {
+       "enabled": true,
+       "threshold": 0.5,
+       "min_speech_duration_ms": 250,
+       "min_silence_duration_ms": 1000,
+       "output_folder": "vad_recordings"
+     }
+   }
+   ```
+   Settings:
+   - enabled: Set to true to enable VAD feature
+   - threshold: Speech detection sensitivity (0.0-1.0)
+   - min_speech_duration_ms: Minimum speech duration to trigger recording
+   - min_silence_duration_ms: Silence duration to end recording
+   - output_folder: Where to save VAD recordings in your vault
+
+3. Additional Dependencies:
+   The VAD feature requires additional Python packages:
+   ```
+   pip install torch sounddevice soundfile
+   ```
+
+4. Usage:
+   - VAD starts automatically when the application runs
+   - Speak normally; recording starts automatically
+   - Recording stops after the configured silence duration
+   - Transcriptions appear in daily TTS files
+   - Audio files are saved in the specified output folder
+
 Notes
 -----
 - The application must be running to process new recordings
@@ -160,6 +204,53 @@ The application handles various error cases gracefully to ensure continuous oper
      * Future prompts will continue to be processed once correct model is available
 
 The application is designed to be resilient - no single error will crash the application or stop it from monitoring for new files. All errors are logged to help with troubleshooting.
+
+Testing
+-------
+The application includes a comprehensive test suite to ensure functionality:
+
+1. Setup Testing Environment:
+   ```bash
+   pip install -r requirements.txt  # Installs testing dependencies
+   ```
+
+2. Running Tests:
+   ```bash
+   # Run all tests
+   pytest
+   
+   # Run specific test file
+   pytest tests/test_vad_recorder.py
+   
+   # Run with coverage report
+   pytest --cov=src --cov-report=term-missing
+   ```
+
+3. Test Coverage:
+   The test suite includes:
+   - Unit tests for VAD functionality
+   - Mock testing for audio processing
+   - Integration tests for Obsidian note creation
+   - Configuration validation tests
+
+4. Adding New Tests:
+   - Place new test files in the `tests/` directory
+   - Name test files with prefix `test_`
+   - Name test classes with prefix `Test`
+   - Name test methods with prefix `test_`
+
+5. Test Structure:
+   ```
+   tests/
+   ├── __init__.py
+   ├── test_vad_recorder.py      # VAD feature tests
+   └── ... (other test files)
+   ```
+
+6. Continuous Integration:
+   - Tests run automatically on every commit
+   - Coverage reports are generated
+   - Failed tests block merging
 
 Generating the exe
 -----------------

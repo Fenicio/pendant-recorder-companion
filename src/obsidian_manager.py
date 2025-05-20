@@ -16,6 +16,7 @@ import re
 import requests
 from datetime import datetime
 from mutagen.mp3 import MP3
+from pathlib import Path
 from .config_manager import ensure_config_exists
 
 class ObsidianManager:
@@ -30,6 +31,8 @@ class ObsidianManager:
     """
     def __init__(self, vault_path):
         """Initialize Obsidian manager with path to vault."""
+        if not vault_path:
+            raise ValueError("Obsidian vault path is not configured. Please set 'obsidian_vault_path' in config.json")
         self.vault_path = vault_path
         self.config = ensure_config_exists()
         self.media_folder = os.path.join(vault_path, self.config['media_folder_name'])
@@ -75,6 +78,38 @@ class ObsidianManager:
         
         # Find and replace all prompts in double curly braces
         return re.sub(r'\{\{(.*?)\}\}', replace_prompt, content)
+
+    def process_vad_recording(self, mp3_path):
+        """
+        Process a VAD recording and append its transcription to the daily TTS file.
+        
+        Args:
+            mp3_path: Path to the MP3 file to process
+        """
+        try:
+            # Get daily note filename
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            tts_filename = f"tts_{date_str}.md"
+            tts_path = Path(self.vault_path) / tts_filename
+            
+            # Transcribe the audio
+            transcription = self.transcription_provider.transcribe(mp3_path)
+            
+            # Format the entry
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            entry = f"\n\n### {timestamp}\n{transcription}"
+            
+            # Create or append to the daily TTS file
+            if not tts_path.exists():
+                tts_path.write_text(f"# Voice Notes {date_str}{entry}")
+            else:
+                with open(tts_path, 'a', encoding='utf-8') as f:
+                    f.write(entry)
+                    
+            logging.info(f"Added transcription to {tts_filename}")
+            
+        except Exception as e:
+            logging.error(f"Error processing VAD recording: {e}")
 
     def create_note(self, title, content, mp3_path):
         """Create a new note in Obsidian with the transcribed text and MP3 link.

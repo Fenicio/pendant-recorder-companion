@@ -1,5 +1,5 @@
 {
-    "obsidian_vault_path": "C:\\Users\\sirgu\\Documents\\Obsidian Vault",
+    "obsidian_vault_path": "C:\\Users\\sirgu\\Documents\\Obsidian Vault\\01 - Inbox\\",
     "record_folder_name": "RECORD",
     "media_folder_name": "media",
     "transcription": {
@@ -11,5 +11,12 @@
         "enabled": true,
         "url": "http://localhost:11434",
         "model": "llama3.2"
+    },
+    "vad": {
+        "enabled": false,
+        "threshold": 0.5,
+        "min_speech_duration_ms": 250,
+        "min_silence_duration_ms": 1000,
+        "output_folder": "vad_recordings"
     }
 }

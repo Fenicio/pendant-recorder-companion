@@ -17,6 +17,9 @@ import threading
 import signal
 import sys
 from .factories import DriveMonitorFactory, SystemTrayFactory
+from .audio.vad_recorder import VADRecorder
+from .config_manager import ConfigManager
+from .obsidian_manager import ObsidianManager
 
 # Configure logging
 logging.basicConfig(
@@ -33,6 +36,11 @@ class Application:
         self.monitor = None
         self.stop_event = threading.Event()
         self.system_tray = None
+        self.vad_recorder = None
+        
+        # Initialize managers
+        self.config_manager = ConfigManager()
+        self.obsidian_manager = ObsidianManager(self.config_manager.get('obsidian_vault_path'))
         
     def start(self):
         """Start the application components."""
@@ -43,6 +51,10 @@ class Application:
             # Initialize platform-specific system tray
             self.system_tray = SystemTrayFactory.create_tray(stop_callback=self.stop)
             self.system_tray.run_detached()
+            
+            # Initialize and start VAD recorder if enabled
+            self.vad_recorder = VADRecorder(self.config_manager, self.obsidian_manager)
+            self.vad_recorder.start()
             
             # Start monitoring
             self.monitor.monitor_drives()
@@ -59,6 +71,8 @@ class Application:
                 self.monitor.stop()
             if self.system_tray:
                 self.system_tray.stop()
+            if self.vad_recorder:
+                self.vad_recorder.stop()
             # Exit the application
             sys.exit(0)
         except Exception as e:
