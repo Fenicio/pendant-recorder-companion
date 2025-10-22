@@ -12,7 +12,7 @@ import os
 from pydub import AudioSegment
 from datetime import datetime
 from typing import List, Optional
-from .utils import get_ffmpeg_path
+from .utils import initialize_pydub
 
 class AudioConverter:
     """
@@ -25,30 +25,34 @@ class AudioConverter:
     def __init__(self):
         """Initialize the audio converter with a temporary directory."""
         self.temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp')
-        
+
         # Create temp directory if it doesn't exist
         if not os.path.exists(self.temp_dir):
             os.makedirs(self.temp_dir)
-            
-        # Configure pydub to use bundled ffmpeg
-        ffmpeg_path = get_ffmpeg_path()
-        if ffmpeg_path:
-            AudioSegment.converter = ffmpeg_path
-            logging.info(f"Using bundled ffmpeg at: {ffmpeg_path}")
-        else:
-            logging.warning("Bundled ffmpeg not found, falling back to system ffmpeg")
+
+        # Initialize pydub with ffmpeg
+        self.ffmpeg_available = initialize_pydub()
+        if not self.ffmpeg_available:
+            logging.error("ffmpeg is not available - audio conversion will fail!")
 
     def convert_to_mp3(self, wav_path: str, creation_time: Optional[datetime] = None) -> Optional[str]:
         """
         Convert WAV file to MP3 and store in temp directory.
-        
+
         Args:
             wav_path: Path to the WAV file
             creation_time: The creation time to set for the MP3 file
-            
+
         Returns:
             Path to the created MP3 file in the temp directory, or None if conversion fails
         """
+        if not self.ffmpeg_available:
+            logging.error(
+                f"Cannot convert {wav_path} to MP3: ffmpeg is not installed. "
+                "Please install ffmpeg to enable audio conversion."
+            )
+            return None
+
         try:
             audio = AudioSegment.from_wav(wav_path)
             filename = os.path.basename(wav_path)
