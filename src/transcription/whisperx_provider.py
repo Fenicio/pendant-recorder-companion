@@ -92,6 +92,32 @@ class WhisperXProvider(TranscriptionProvider):
             ffmpeg_dir = os.path.dirname(ffmpeg_exe)
             logging.info(f"ffmpeg directory: {ffmpeg_dir}")
 
+            # WhisperX looks for "ffmpeg.exe" or "ffmpeg" in PATH, but imageio-ffmpeg
+            # provides platform-specific names like "ffmpeg-win-x86_64-v7.1.exe"
+            # Create a copy with the expected name
+            import platform
+            if platform.system().lower() == 'windows':
+                expected_name = "ffmpeg.exe"
+            else:
+                expected_name = "ffmpeg"
+
+            ffmpeg_standard_path = os.path.join(ffmpeg_dir, expected_name)
+
+            # Check if we need to create a copy
+            if not os.path.exists(ffmpeg_standard_path) or os.path.getsize(ffmpeg_standard_path) == 0:
+                try:
+                    import shutil as sh
+                    logging.info(f"Creating {expected_name} copy for WhisperX compatibility...")
+                    logging.info(f"Source: {ffmpeg_exe}")
+                    logging.info(f"Destination: {ffmpeg_standard_path}")
+                    sh.copy2(ffmpeg_exe, ffmpeg_standard_path)
+                    logging.info(f"Successfully created {expected_name}")
+                except Exception as copy_error:
+                    logging.error(f"Failed to create {expected_name}: {copy_error}")
+                    logging.info("Trying to continue anyway...")
+            else:
+                logging.info(f"{expected_name} already exists in directory")
+
             # Add to PATH
             current_path = os.environ.get("PATH", "")
             if ffmpeg_dir not in current_path:
@@ -101,11 +127,32 @@ class WhisperXProvider(TranscriptionProvider):
                 logging.info("Already in PATH")
 
             # Also set FFMPEG environment variable (some tools check this)
-            os.environ["FFMPEG_BINARY"] = ffmpeg_exe
-            os.environ["FFMPEG_PATH"] = ffmpeg_exe
+            os.environ["FFMPEG_BINARY"] = ffmpeg_standard_path
+            os.environ["FFMPEG_PATH"] = ffmpeg_standard_path
             logging.info("Set FFMPEG_BINARY and FFMPEG_PATH environment variables")
 
-            # Verify ffmpeg is now accessible
+            # Test the ffmpeg copy to verify it works
+            try:
+                import subprocess
+                logging.info(f"Testing ffmpeg execution: {ffmpeg_standard_path}")
+                result = subprocess.run(
+                    [ffmpeg_standard_path, '-version'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                logging.info(f"ffmpeg test exit code: {result.returncode}")
+                if result.returncode == 0:
+                    logging.info("OK: ffmpeg is working correctly")
+                    # Log first line of version output
+                    first_line = result.stdout.split('\n')[0] if result.stdout else "No output"
+                    logging.info(f"ffmpeg version: {first_line}")
+                else:
+                    logging.error(f"ERROR: ffmpeg test failed: {result.stderr}")
+            except Exception as e:
+                logging.error(f"ERROR: Failed to test ffmpeg: {e}")
+
+            # Verify ffmpeg is now accessible via which
             ffmpeg_check = shutil.which('ffmpeg')
             logging.info(f"Verification - shutil.which('ffmpeg'): {ffmpeg_check}")
 
@@ -113,10 +160,10 @@ class WhisperXProvider(TranscriptionProvider):
                 logging.info("SUCCESS: ffmpeg is accessible in PATH")
                 return ffmpeg_check
             else:
-                logging.error("ERROR: ffmpeg still not in PATH after setup!")
-                # Try using the full path directly
-                logging.info(f"Will try using full path: {ffmpeg_exe}")
-                return ffmpeg_exe
+                logging.warning("WARNING: shutil.which('ffmpeg') still returns None")
+                logging.info(f"But {expected_name} exists at: {ffmpeg_standard_path}")
+                logging.info("WhisperX should find it in the directory we added to PATH")
+                return ffmpeg_standard_path
 
         except Exception as e:
             logging.error(f"ERROR in _ensure_ffmpeg_available: {e}", exc_info=True)
@@ -157,27 +204,7 @@ class WhisperXProvider(TranscriptionProvider):
                 logging.error("Then restart the application")
                 return None
 
-            logging.info(f"SUCCESS: ffmpeg available at: {ffmpeg_exe}")
-
-            # Try to run ffmpeg to verify it works
-            try:
-                import subprocess
-                result = subprocess.run(
-                    [ffmpeg_exe, '-version'],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                logging.info(f"ffmpeg test exit code: {result.returncode}")
-                if result.returncode == 0:
-                    logging.info("OK: ffmpeg is working correctly")
-                    # Log first line of version output
-                    first_line = result.stdout.split('\n')[0] if result.stdout else "No output"
-                    logging.info(f"ffmpeg version: {first_line}")
-                else:
-                    logging.error(f"ERROR: ffmpeg test failed: {result.stderr}")
-            except Exception as e:
-                logging.error(f"ERROR: Failed to test ffmpeg: {e}")
+            logging.info(f"ffmpeg setup complete, returned path: {ffmpeg_exe}")
 
             # Load audio
             logging.info("Calling whisperx.load_audio()...")
