@@ -166,11 +166,11 @@ def setup_ffmpeg_path() -> bool:
                 logging.info(f"shutil.which('ffmpeg') returns: {ffmpeg_check}")
 
                 if ffmpeg_check:
-                    logging.info("✓ ffmpeg is accessible in PATH")
+                    logging.info("OK: ffmpeg is accessible in PATH")
                     logging.info("=" * 60)
                     return True
                 else:
-                    logging.warning("✗ ffmpeg not found in PATH after adding directory!")
+                    logging.warning("ERROR: ffmpeg not found in PATH after adding directory!")
 
         except ImportError as e:
             logging.warning(f"imageio-ffmpeg not available: {e}")
@@ -181,7 +181,7 @@ def setup_ffmpeg_path() -> bool:
         import shutil
         system_ffmpeg = shutil.which('ffmpeg')
         if system_ffmpeg:
-            logging.info(f"✓ System ffmpeg found in PATH: {system_ffmpeg}")
+            logging.info(f"OK: System ffmpeg found in PATH: {system_ffmpeg}")
             logging.info("=" * 60)
             return True
 
@@ -203,11 +203,11 @@ def setup_ffmpeg_path() -> bool:
 
             # Verify ffmpeg is now accessible
             if shutil.which('ffmpeg'):
-                logging.info("✓ ffmpeg accessible after adding custom bin directory")
+                logging.info("OK: ffmpeg accessible after adding custom bin directory")
                 logging.info("=" * 60)
                 return True
 
-        logging.error("✗ ffmpeg not found anywhere!")
+        logging.error("ERROR: ffmpeg not found anywhere!")
         logging.error("Please install: pip install imageio-ffmpeg")
         logging.info("=" * 60)
         return False
