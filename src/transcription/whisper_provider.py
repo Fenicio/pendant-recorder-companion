@@ -6,17 +6,22 @@ import logging
 import whisper
 from typing import List, Tuple, Optional
 from . import TranscriptionProvider
+from ..audio.utils import setup_ffmpeg_path
 
 class WhisperProvider(TranscriptionProvider):
     """Transcription provider using OpenAI's Whisper model locally."""
-    
+
     def __init__(self, model_name: str = "base"):
         """
         Initialize Whisper provider.
-        
+
         Args:
             model_name (str): Name of the Whisper model to use
         """
+        # Setup ffmpeg in PATH for Whisper (it uses ffmpeg internally)
+        if not setup_ffmpeg_path():
+            logging.warning("ffmpeg setup failed - Whisper transcription may fail")
+
         self.model_name = model_name
         try:
             logging.info(f"Loading Whisper model: {model_name}")

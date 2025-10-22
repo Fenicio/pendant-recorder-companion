@@ -7,25 +7,31 @@ import whisperx
 import torch
 from typing import List, Tuple, Optional
 from . import TranscriptionProvider
+from ..audio.utils import setup_ffmpeg_path
+
 
 class WhisperXProvider(TranscriptionProvider):
     """Transcription provider using WhisperX for improved accuracy."""
-    
+
     def __init__(self, model_name: str = "base", device: str = "cuda" if torch.cuda.is_available() else "cpu"):
         """
         Initialize WhisperX provider.
-        
+
         Args:
             model_name (str): Name of the WhisperX model to use
             device (str): Device to use for inference ("cuda" or "cpu")
         """
+        # Setup ffmpeg in PATH for WhisperX (it uses ffmpeg internally)
+        if not setup_ffmpeg_path():
+            logging.warning("ffmpeg setup failed - WhisperX transcription may fail")
+
         # Log CUDA information
         logging.info(f"CUDA available: {torch.cuda.is_available()}")
         if torch.cuda.is_available():
             logging.info(f"CUDA device count: {torch.cuda.device_count()}")
             logging.info(f"CUDA device name: {torch.cuda.get_device_name(0)}")
             logging.info(f"CUDA version: {torch.version.cuda}")
-        
+
         self.model_name = model_name
         self.device = device
         try:

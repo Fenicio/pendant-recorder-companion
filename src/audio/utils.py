@@ -115,3 +115,62 @@ def initialize_pydub() -> bool:
     except Exception as e:
         logging.error(f"Error initializing pydub: {e}")
         return False
+
+
+def setup_ffmpeg_path() -> bool:
+    """
+    Add ffmpeg to system PATH environment variable.
+
+    This is required for libraries like WhisperX and openai-whisper that
+    use ffmpeg internally but don't provide a way to configure the path.
+
+    Returns:
+        True if ffmpeg was found and added to PATH, False otherwise
+    """
+    try:
+        # First, try to get ffmpeg from imageio-ffmpeg
+        try:
+            import imageio_ffmpeg
+            ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+            if ffmpeg_path and os.path.exists(ffmpeg_path):
+                # Add the directory containing ffmpeg to PATH
+                ffmpeg_dir = os.path.dirname(ffmpeg_path)
+                if ffmpeg_dir not in os.environ.get("PATH", ""):
+                    os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+                    logging.info(f"Added ffmpeg directory to PATH: {ffmpeg_dir}")
+                return True
+        except ImportError:
+            logging.warning("imageio-ffmpeg not available")
+        except Exception as e:
+            logging.warning(f"Could not setup imageio-ffmpeg PATH: {e}")
+
+        # Check if ffmpeg is already in PATH
+        system_ffmpeg = shutil.which('ffmpeg')
+        if system_ffmpeg:
+            logging.info(f"ffmpeg already in PATH: {system_ffmpeg}")
+            return True
+
+        # Try to add custom bundled ffmpeg to PATH
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+        bin_dir = os.path.join(base_dir, 'bin')
+        if os.path.exists(bin_dir):
+            if bin_dir not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+                logging.info(f"Added custom bin directory to PATH: {bin_dir}")
+
+            # Verify ffmpeg is now accessible
+            if shutil.which('ffmpeg'):
+                return True
+
+        logging.error(
+            "ffmpeg not found! Please install: pip install imageio-ffmpeg"
+        )
+        return False
+
+    except Exception as e:
+        logging.error(f"Error setting up ffmpeg PATH: {e}")
+        return False
