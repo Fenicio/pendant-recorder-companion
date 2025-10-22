@@ -128,26 +128,61 @@ def setup_ffmpeg_path() -> bool:
         True if ffmpeg was found and added to PATH, False otherwise
     """
     try:
+        logging.info("=" * 60)
+        logging.info("Setting up ffmpeg PATH configuration")
+        logging.info("=" * 60)
+
+        # Log current PATH
+        current_path = os.environ.get("PATH", "")
+        logging.info(f"Current PATH length: {len(current_path)} characters")
+        logging.info(f"Current PATH directories: {current_path.count(os.pathsep)} entries")
+
         # First, try to get ffmpeg from imageio-ffmpeg
         try:
+            logging.info("Attempting to import imageio-ffmpeg...")
             import imageio_ffmpeg
+            logging.info("imageio-ffmpeg imported successfully")
+
             ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+            logging.info(f"imageio-ffmpeg.get_ffmpeg_exe() returned: {ffmpeg_path}")
+
             if ffmpeg_path and os.path.exists(ffmpeg_path):
+                logging.info(f"ffmpeg binary exists at: {ffmpeg_path}")
+                logging.info(f"ffmpeg binary is executable: {os.access(ffmpeg_path, os.X_OK)}")
+
                 # Add the directory containing ffmpeg to PATH
                 ffmpeg_dir = os.path.dirname(ffmpeg_path)
+                logging.info(f"ffmpeg directory: {ffmpeg_dir}")
+
                 if ffmpeg_dir not in os.environ.get("PATH", ""):
                     os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
                     logging.info(f"Added ffmpeg directory to PATH: {ffmpeg_dir}")
-                return True
-        except ImportError:
-            logging.warning("imageio-ffmpeg not available")
+                else:
+                    logging.info(f"ffmpeg directory already in PATH: {ffmpeg_dir}")
+
+                # Verify ffmpeg is accessible
+                import shutil
+                ffmpeg_check = shutil.which('ffmpeg')
+                logging.info(f"shutil.which('ffmpeg') returns: {ffmpeg_check}")
+
+                if ffmpeg_check:
+                    logging.info("✓ ffmpeg is accessible in PATH")
+                    logging.info("=" * 60)
+                    return True
+                else:
+                    logging.warning("✗ ffmpeg not found in PATH after adding directory!")
+
+        except ImportError as e:
+            logging.warning(f"imageio-ffmpeg not available: {e}")
         except Exception as e:
-            logging.warning(f"Could not setup imageio-ffmpeg PATH: {e}")
+            logging.warning(f"Could not setup imageio-ffmpeg PATH: {e}", exc_info=True)
 
         # Check if ffmpeg is already in PATH
+        import shutil
         system_ffmpeg = shutil.which('ffmpeg')
         if system_ffmpeg:
-            logging.info(f"ffmpeg already in PATH: {system_ffmpeg}")
+            logging.info(f"✓ System ffmpeg found in PATH: {system_ffmpeg}")
+            logging.info("=" * 60)
             return True
 
         # Try to add custom bundled ffmpeg to PATH
@@ -156,7 +191,11 @@ def setup_ffmpeg_path() -> bool:
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
+        logging.info(f"Checking custom bin directory in: {base_dir}")
         bin_dir = os.path.join(base_dir, 'bin')
+        logging.info(f"Custom bin directory path: {bin_dir}")
+        logging.info(f"Custom bin directory exists: {os.path.exists(bin_dir)}")
+
         if os.path.exists(bin_dir):
             if bin_dir not in os.environ.get("PATH", ""):
                 os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
@@ -164,13 +203,16 @@ def setup_ffmpeg_path() -> bool:
 
             # Verify ffmpeg is now accessible
             if shutil.which('ffmpeg'):
+                logging.info("✓ ffmpeg accessible after adding custom bin directory")
+                logging.info("=" * 60)
                 return True
 
-        logging.error(
-            "ffmpeg not found! Please install: pip install imageio-ffmpeg"
-        )
+        logging.error("✗ ffmpeg not found anywhere!")
+        logging.error("Please install: pip install imageio-ffmpeg")
+        logging.info("=" * 60)
         return False
 
     except Exception as e:
-        logging.error(f"Error setting up ffmpeg PATH: {e}")
+        logging.error(f"Error setting up ffmpeg PATH: {e}", exc_info=True)
+        logging.info("=" * 60)
         return False
