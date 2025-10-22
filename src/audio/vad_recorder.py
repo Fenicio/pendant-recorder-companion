@@ -18,16 +18,21 @@ from pathlib import Path
 import wave
 import io
 from pydub import AudioSegment
+from .utils import initialize_pydub
 
 class VADRecorder:
     def __init__(self, config, obsidian_manager):
         """
         Initialize VAD recorder.
-        
+
         Args:
             config: Configuration object containing VAD settings
             obsidian_manager: ObsidianManager instance for file management
         """
+        # Initialize pydub with ffmpeg before any audio operations
+        if not initialize_pydub():
+            logging.warning("ffmpeg not available - audio export may fail")
+
         self.config = config
         self.obsidian_manager = obsidian_manager
         self.recording = False
